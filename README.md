@@ -82,3 +82,32 @@ Analyzing yearly yields.
 root@333e83d87020:~#
 ```
 
+### PySpark Code for Analysis
+
+```
+def filter_and_get_avg(df, year, crop):
+    # https://stackoverflow.com/a/32550907
+    filtered_df = df.filter(df['year'] == year).filter(df['crop'] == crop)
+    crop_avg = round(filtered_df.agg(avg(col("yield"))).rdd.map(lambda r: r[0]).collect()[0], 1)
+    return crop_avg
+
+
+def show_yearly_averages(df):
+    print("\nFinding unique years/crops.\n")
+    crops = sorted(df.select('crop').distinct().rdd.map(lambda r: r[0]).collect())
+    years = sorted(df.select('year').distinct().rdd.map(lambda r: r[0]).collect())
+
+    print("Crops: " + ", ".join([str(item) for item in crops]))
+    print("Years: " + ", ".join([str(item) for item in years]))
+
+    print("\nAnalyzing yearly yields.\n")
+
+    data = []
+    for year in years:
+        year_data = {}
+        for crop in crops:
+            year_data[crop] = filter_and_get_avg(df, year, crop)
+        data.append(year_data)
+
+    print(pd.DataFrame(data, index=years))
+```

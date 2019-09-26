@@ -20,6 +20,13 @@ def show_df_summary(df):
         print(str(sample))
 
 
+def filter_and_get_avg(df, year, crop):
+    # https://stackoverflow.com/a/32550907
+    filtered_df = df.filter(df['year'] == year).filter(df['crop'] == crop)
+    crop_avg = round(filtered_df.agg(avg(col("yield"))).rdd.map(lambda r: r[0]).collect()[0], 1)
+    return crop_avg
+
+
 def show_yearly_averages(df):
     print("\nFinding unique years/crops.\n")
     crops = sorted(df.select('crop').distinct().rdd.map(lambda r: r[0]).collect())
@@ -34,10 +41,7 @@ def show_yearly_averages(df):
     for year in years:
         year_data = {}
         for crop in crops:
-            filtered_df = df.filter(df['year'] == year).filter(df['crop'] == crop)
-            crop_avg = round(filtered_df.agg(avg(col("yield"))).rdd.map(lambda r: r[0]).collect()[0], 1)
-            year_data[crop] = crop_avg
-
+            year_data[crop] = filter_and_get_avg(df, year, crop)
         data.append(year_data)
 
     print(pd.DataFrame(data, index=years))
