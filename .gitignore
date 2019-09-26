@@ -6,6 +6,7 @@
 !*.py
 !*.txt
 !*.bat
+!*.md
 
 # ...even if they are in subdirectories
 !*/
