@@ -1,11 +1,12 @@
 # Climate PySpark Demo
 
-### Docker
+## Docker
    
   * Build container: `docker build -t pyspark .`
   * Start container: `run-container.bat`
- 
-### Create fake data and save to `data.parquet`.
+  
+
+## Create fake data and save to `data.parquet`.
 
 ```
 root@333e83d87020:~# python create_data.py
@@ -31,7 +32,7 @@ root@333e83d87020:~#
 ```
 
 
-### Load `data.parquet` and do analysis.
+## Load `data.parquet` and do analysis.
 
 ```
 root@333e83d87020:~# python main.py
@@ -82,7 +83,7 @@ Analyzing yearly yields.
 root@333e83d87020:~#
 ```
 
-### PySpark Code for Analysis
+## PySpark Code for Analysis
 
 ```
 def filter_and_get_avg(df, year, crop):
