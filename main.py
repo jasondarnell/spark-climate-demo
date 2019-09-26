@@ -1,14 +1,15 @@
-
 import pandas as pd
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 from pyspark.sql.functions import col, avg
+
 
 def get_df():
     sc = SparkContext()
     sqlContext = SQLContext(sc)
     df = sqlContext.read.parquet('data.parquet')
     return df
+
 
 def show_df_summary(df):
     print("\nDataFrame schema:")
@@ -17,6 +18,7 @@ def show_df_summary(df):
     samples = df.sample(fraction=1.0).limit(10).collect()
     for sample in samples:
         print(str(sample))
+
 
 def show_yearly_averages(df):
     print("\nFinding unique years/crops.\n")
@@ -39,6 +41,7 @@ def show_yearly_averages(df):
         data.append(year_data)
 
     print(pd.DataFrame(data, index=years))
+
 
 def main():
     df = get_df()

@@ -1,4 +1,3 @@
-
 import pandas as pd
 from random import random
 
@@ -44,7 +43,6 @@ def main():
     df = pd.DataFrame(data)
     print("Data created!\nSample:")
     print(df.sample(5))
-
 
     df.to_parquet("data.parquet")
     print("\nData saved to 'data.parquet'.")
