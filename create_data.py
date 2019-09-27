@@ -30,7 +30,8 @@ def main():
                     field_name = f"Field-{field_num}"
                     for raster in range(NUM_RASTERS):
                         raster_yield = round((rand_crop+rand_year+rand_farm+rand_field+random()) * K)
-
+                        if random() > 0.99:
+                            raster_yield *= 10
                         data.append({
                             "crop": crop,
                             "year": year,

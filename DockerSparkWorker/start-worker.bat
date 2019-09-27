@@ -1,0 +1,1 @@
+docker run --rm -it --network spark-net --name my-spark-worker2 -v C:\Users\jmd0421\dev\spark-climate-demo:/root spark-worker

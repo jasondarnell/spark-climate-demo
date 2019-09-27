@@ -1,1 +1,1 @@
-docker run -it --rm -v C:\Users\jmd0421\dev\spark-climate-demo:/root  pyspark
+docker run -it --rm -v C:\Users\jmd0421\dev\spark-climate-demo:/root --network spark-net pyspark

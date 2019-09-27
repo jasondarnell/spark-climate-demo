@@ -5,7 +5,7 @@ from pyspark.sql.functions import col, avg
 
 
 def get_df():
-    sc = SparkContext()
+    sc = SparkContext(master="spark://my-spark-master:7077")
     sqlContext = SQLContext(sc)
     df = sqlContext.read.parquet('data.parquet')
     return df
