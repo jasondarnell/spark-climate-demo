@@ -1,5 +1,12 @@
 # Climate PySpark Demo
 
+## Description
+
+This demo was created to learn more about and get hands on experience with PySpark.
+
+In this demo, fake crop data is created and analyzed to find average yields among years/farms/crops as well as outliers.
+
+
 ## Docker
    
   * Build container: `docker build -t pyspark .`
