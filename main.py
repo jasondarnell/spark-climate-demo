@@ -6,7 +6,7 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import col, avg, mean as _mean, stddev as _stddev
 
 
-OUTLIER_STDDEV_MULT = 3.5
+OUTLIER_STDDEV_MULT = 3
 
 
 def get_df():
@@ -14,6 +14,7 @@ def get_df():
     #sc = SparkContext(master="spark://my-spark-master:7077")
     sc = SparkContext()
     sqlContext = SQLContext(sc)
+    print("Loading data from 'data.parquet'.")
     df = sqlContext.read.parquet('data.parquet')
     return df
 

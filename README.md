@@ -16,9 +16,10 @@ In this demo, fake crop data is created and analyzed to find average yields amon
 ## Create fake data and save to `data.parquet`.
 
 ```
-root@333e83d87020:~# python create_data.py
 
-Creating data.
+root@05a651babe30:~# python create_data.py
+
+Creating fake data.
         Years: 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
         Crops: corn, soy_beans, wheat
         Num farms: 10
@@ -26,27 +27,30 @@ Creating data.
         Num rasters per field: 50
 
 Data created!
+
 Sample:
              crop  year    farm     field  raster  yield
-97183        corn  2019  Farm-7   Field-3      33     26
-80627        corn  2018  Farm-0  Field-12      27     25
-212937      wheat  2011  Farm-2  Field-18      37     32
-45132        corn  2014  Farm-5   Field-2      32     21
-188780  soy_beans  2018  Farm-8  Field-15      30     26
+193200  soy_beans  2019  Farm-3   Field-4       0  42.69
+29270        corn  2012  Farm-9   Field-5      20  39.01
+82172        corn  2018  Farm-2   Field-3      22  47.05
+213106      wheat  2011  Farm-3   Field-2       6  48.53
+33810        corn  2013  Farm-3  Field-16      10  45.37
 
 Data saved to 'data.parquet'.
-root@333e83d87020:~#
+
 ```
 
 
 ## Load `data.parquet` and do analysis.
 
 ```
+
 root@05a651babe30:~# python main.py
-19/09/30 20:59:07 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+19/09/30 21:20:30 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+Loading data from 'data.parquet'.
 
 DataFrame schema:
 root
@@ -59,89 +63,89 @@ root
 
 Sample:
    crop  year    farm    field  raster  yield
-0  corn  2010  Farm-0  Field-0       0  54.62
-1  corn  2010  Farm-0  Field-0       2  55.39
-2  corn  2010  Farm-0  Field-0       3  54.92
-3  corn  2010  Farm-0  Field-0       8  59.57
-4  corn  2010  Farm-0  Field-0       9  55.68
+0  corn  2010  Farm-0  Field-0       0  45.90
+1  corn  2010  Farm-0  Field-0       3  51.67
+2  corn  2010  Farm-0  Field-0       4  49.58
+3  corn  2010  Farm-0  Field-0       5  46.03
+4  corn  2010  Farm-0  Field-0       8  53.59
 
 Analyzing yield by year.
 
       avg(yield)
 year
-2010        51.6
-2011        55.2
-2012        52.6
-2013        53.9
-2014        53.1
-2015        50.1
-2016        54.7
-2017        48.2
-2018        51.4
-2019        49.3
+2010        54.0
+2011        47.1
+2012        46.4
+2013        48.9
+2014        48.3
+2015        48.3
+2016        50.6
+2017        57.1
+2018        54.6
+2019        44.1
 
 Analyzing yield by farm.
 
         avg(yield)
 farm
-Farm-0        52.3
-Farm-1        53.1
-Farm-2        51.7
-Farm-3        52.0
+Farm-0        47.2
+Farm-1        48.4
+Farm-2        51.1
+Farm-3        47.5
 Farm-4        51.8
-Farm-5        51.6
-Farm-6        51.5
-Farm-7        51.8
-Farm-8        52.0
-Farm-9        52.2
+Farm-5        52.8
+Farm-6        48.9
+Farm-7        55.0
+Farm-8        49.9
+Farm-9        46.9
 
 Analyzing yield by crop.
 
            avg(yield)
 crop
-corn             55.5
-soy_beans        51.5
-wheat            49.0
+corn             48.0
+soy_beans        51.7
+wheat            50.2
 
-Outlier threshold (mean - 3.5 x std): 28.8
-Mean yield: 52.0
+Outlier threshold (mean - 3 x std): 30.5
+Mean yield: 50.0
 
-Outliers (234 out of 300000):
+Outliers (182 out of 300000):
 Sample:
-        crop  year    farm     field  raster  yield
-0  soy_beans  2014  Farm-7   Field-7      12  27.78
-1  soy_beans  2014  Farm-7   Field-7      21  27.57
-2  soy_beans  2014  Farm-7  Field-14      14  28.60
-3      wheat  2017  Farm-0   Field-9       8  27.99
-4      wheat  2017  Farm-0   Field-9      15  28.18
+   crop  year    farm     field  raster  yield
+0  corn  2011  Farm-1  Field-16       6  29.70
+1  corn  2011  Farm-1  Field-16      15  29.54
+2  corn  2011  Farm-3   Field-7       4  29.26
+3  corn  2011  Farm-3  Field-13       6  29.77
+4  corn  2011  Farm-3  Field-13      22  30.13
 
 Outliers by crop:
            count
 crop
-soy_beans      3
-wheat        231
+corn         145
+soy_beans      7
+wheat         30
 
 Outliers by year:
       count
 year
-2014      3
-2017     55
-2019    176
+2011     16
+2012     22
+2013      1
+2019    143
 
 Outliers by farm:
         count
 farm
-Farm-0    165
-Farm-1      1
-Farm-2     29
-Farm-3      7
-Farm-4      9
-Farm-5      3
-Farm-7     11
-Farm-8      3
-Farm-9      6
+Farm-0     38
+Farm-1     45
+Farm-2      2
+Farm-3     33
+Farm-6      5
+Farm-8      4
+Farm-9     55
 
-Duration: 13.3 seconds
+Duration: 13.7 seconds
 
 ```
 
