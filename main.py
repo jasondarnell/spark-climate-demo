@@ -28,6 +28,7 @@ def show_df_summary(df):
 
 
 def find_unique(df, field_name):
+    # Don't need this anymore. It is slow anyways.
     print(f"Finding unique {field_name}s.")
     #values = sorted(df.select(field_name).distinct().rdd.map(lambda r: r[0]).collect())
     values = sorted(df[(field_name,)].distinct().rdd.map(lambda r: r[0]).collect())
@@ -35,25 +36,24 @@ def find_unique(df, field_name):
     return values
 
 
-def show_yearly_averages(df, crops, years):
+def show_yearly_averages(df):
     print("\nAnalyzing yearly yields.\n")
     # Used to do double for-loop here.
-    df_filtered = df.groupBy("year").agg({'yield': 'avg'})
+    df_filtered = df.groupBy("year").agg({'yield': 'avg'}).orderBy("year")
     pd_df = df_filtered.toPandas().round(1)
-    pd_df.set_index("year")
+    pd_df.set_index("year", inplace=True)
     print(pd_df)
 
 
-def find_outliers_by_field(outliers, field_name, field_values):
-    field_counts = []
-    for field in field_values:
-        count = outliers.filter(outliers[field_name] == field).count()
-        field_counts.append({"count": count})
+def find_outliers_by_field(outliers, field_name):
+    df_counts = outliers.orderBy(field_name).groupBy(field_name).count()
+    pd_df_counts = df_counts.toPandas()
+    pd_df_counts.set_index(field_name, inplace=True)
     print(f"\nOutliers by {field_name}:")
-    print(pd.DataFrame(field_counts, index=field_values))
+    print(pd_df_counts)
 
 
-def find_outliers(df, crops, years, farms):
+def find_outliers(df):
         df_stats = df.select(
             _mean(col('yield')).alias('mean'),
             _stddev(col('yield')).alias('std')
@@ -61,7 +61,7 @@ def find_outliers(df, crops, years, farms):
         mean = df_stats[0]['mean']
         std = df_stats[0]['std']
         min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
-        print(f"\nOutlier threshold (min yield): {min_yield}")
+        print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
         outliers = df.filter(df['yield'] < min_yield)
         rows = outliers.collect()
@@ -70,22 +70,18 @@ def find_outliers(df, crops, years, farms):
         print("Sample:")
         print(pd.DataFrame([row.asDict() for row in rows]).head(5))
 
-        find_outliers_by_field(outliers, "crop", crops)
-        find_outliers_by_field(outliers, "year", years)
-        find_outliers_by_field(outliers, "farm", farms)
+        find_outliers_by_field(outliers, "crop")
+        find_outliers_by_field(outliers, "year")
+        find_outliers_by_field(outliers, "farm")
 
 
 def main():
     t = time()
 
     df = get_df()
-    crops = find_unique(df, "crop")
-    years = find_unique(df, "year")
-    farms = find_unique(df, "farm")
-
     show_df_summary(df)
-    show_yearly_averages(df, crops, years)
-    find_outliers(df, crops, years, farms)
+    show_yearly_averages(df)
+    find_outliers(df)
 
     print(f"\nDuration: {round(time()-t, 1)} seconds\n")
 
