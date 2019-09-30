@@ -1,3 +1,6 @@
+
+
+from time import time
 import pandas as pd
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -6,7 +9,6 @@ from pyspark.sql.functions import col, avg, mean as _mean, stddev as _stddev
 
 OUTLIER_STDDEV_MULT = 3.5
 
-get_first = lambda item: item[0]
 
 def get_df():
     # Use this for docker master/workers
@@ -27,7 +29,8 @@ def show_df_summary(df):
 
 def find_unique(df, field_name):
     print(f"Finding unique {field_name}s.")
-    values = sorted(df.select(field_name).distinct().rdd.map(lambda r: r[0]).collect())
+    #values = sorted(df.select(field_name).distinct().rdd.map(lambda r: r[0]).collect())
+    values = sorted(df[(field_name,)].distinct().rdd.map(lambda r: r[0]).collect())
     print(f"{field_name.title()}s: " + ", ".join([str(item) for item in values]))
     return values
 
@@ -39,7 +42,6 @@ def show_yearly_averages(df, crops, years):
     pd_df = df_filtered.toPandas().round(1)
     pd_df.set_index("year")
     print(pd_df)
-    exit(0)
 
 
 def find_outliers_by_field(outliers, field_name, field_values):
@@ -49,6 +51,7 @@ def find_outliers_by_field(outliers, field_name, field_values):
         field_counts.append({"count": count})
     print(f"\nOutliers by {field_name}:")
     print(pd.DataFrame(field_counts, index=field_values))
+
 
 def find_outliers(df, crops, years, farms):
         df_stats = df.select(
@@ -73,6 +76,8 @@ def find_outliers(df, crops, years, farms):
 
 
 def main():
+    t = time()
+
     df = get_df()
     crops = find_unique(df, "crop")
     years = find_unique(df, "year")
@@ -82,6 +87,7 @@ def main():
     show_yearly_averages(df, crops, years)
     find_outliers(df, crops, years, farms)
 
+    print(f"\nDuration: {round(time()-t, 1)} seconds\n")
 
 if __name__ == "__main__":
     main()
