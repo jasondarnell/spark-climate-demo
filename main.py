@@ -21,7 +21,7 @@ def get_df():
 
 def show_df_summary(df):
     print("\nDataFrame schema:")
-    df.printSchema()
+    #df.printSchema()
     print("Sample:")
     samples = df.sample(fraction=0.5).limit(5).collect()
     print(pd.DataFrame([row.asDict() for row in samples]))

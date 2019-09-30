@@ -52,15 +52,6 @@ Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
 Loading data from 'data.parquet'.
 
-DataFrame schema:
-root
- |-- crop: string (nullable = true)
- |-- year: long (nullable = true)
- |-- farm: string (nullable = true)
- |-- field: string (nullable = true)
- |-- raster: long (nullable = true)
- |-- yield: double (nullable = true)
-
 Sample:
    crop  year    farm    field  raster  yield
 0  corn  2010  Farm-0  Field-0       0  45.90
