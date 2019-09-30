@@ -35,6 +35,15 @@ def find_unique(df, field_name):
     return values
 
 
+def show_average_by_field(df, field_name):
+    print(f"\nAnalyzing yield by {field_name}.\n")
+    # Used to do double for-loop here.
+    df_filtered = df.groupBy(field_name).agg({'yield': 'avg'}).orderBy(field_name)
+    pd_df = df_filtered.toPandas().round(1)
+    pd_df.set_index(field_name, inplace=True)
+    print(pd_df)
+
+
 def show_yearly_averages(df):
     print("\nAnalyzing yearly yields.\n")
     # Used to do double for-loop here.
@@ -69,9 +78,7 @@ def find_outliers(df):
         print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
         outliers = df.filter(df['yield'] < min_yield)
-        outliers_count = outliers.count()
-        count = df.count()
-        print(f"Outliers ({outliers_count} out of {count}):")
+        print(f"Outliers ({outliers.count()} out of {df.count()}):")
         print("Sample:")
         print(outliers.toPandas().head(5))
 
@@ -80,12 +87,18 @@ def find_outliers(df):
         find_outliers_by_field(outliers, "farm")
 
 
+def show_averages(df):
+    show_average_by_field(df, "year")
+    show_average_by_field(df, "farm")
+    show_average_by_field(df, "crop")
+
+
 def main():
     t = time()
 
     df = get_df()
     show_df_summary(df)
-    show_yearly_averages(df)
+    show_averages(df)
     find_outliers(df)
 
     print(f"\nDuration: {round(time()-t, 1)} seconds\n")
