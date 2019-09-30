@@ -35,8 +35,9 @@ root@333e83d87020:~#
 ## Load `data.parquet` and do analysis.
 
 ```
-root@333e83d87020:~# python main.py
-19/09/26 14:55:22 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+
+root@05a651babe30:~# python main.py
+19/09/30 19:23:32 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
@@ -48,67 +49,118 @@ root
  |-- farm: string (nullable = true)
  |-- field: string (nullable = true)
  |-- raster: long (nullable = true)
- |-- yield: long (nullable = true)
+ |-- yield: double (nullable = true)
 
 Sample:
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=0, yield=32)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=1, yield=26)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=2, yield=34)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=3, yield=26)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=4, yield=29)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=5, yield=31)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=6, yield=35)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=7, yield=34)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=8, yield=34)
-Row(crop='corn', year=2010, farm='Farm-0', field='Field-0', raster=9, yield=33)
-
-Finding unique years/crops.
-
-Crops: corn, soy_beans, wheat
-Years: 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
+   crop  year    farm    field  raster  yield
+0  corn  2010  Farm-0  Field-0       2  56.71
+1  corn  2010  Farm-0  Field-0       4  52.54
+2  corn  2010  Farm-0  Field-0       5  57.58
+3  corn  2010  Farm-0  Field-0       6  56.93
+4  corn  2010  Farm-0  Field-0       7  50.67
 
 Analyzing yearly yields.
 
-      corn  soy_beans  wheat
-2010  26.0       21.9   31.1
-2011  22.6       25.0   28.9
-2012  22.0       22.7   27.8
-2013  20.7       23.1   23.6
-2014  23.4       17.5   25.4
-2015  18.7       24.4   28.5
-2016  22.2       18.8   30.6
-2017  28.3       15.4   30.4
-2018  26.2       20.6   24.4
-2019  26.2       18.5   29.7
-root@333e83d87020:~#
+      avg(yield)
+year
+2010        47.6
+2011        47.8
+2012        46.9
+2013        50.2
+2014        46.3
+2015        47.5
+2016        47.3
+2017        49.0
+2018        43.4
+2019        44.8
+
+Outlier threshold (mean - 3.5 x std): 25.4
+Mean yield: 47.1
+
+Outliers (35 out of 300000):
+Sample:
+   crop  year    farm     field  raster  yield
+0  corn  2018  Farm-1  Field-11      27  24.39
+1  corn  2018  Farm-2   Field-1      45  25.37
+2  corn  2018  Farm-2   Field-3      19  23.60
+3  corn  2018  Farm-2   Field-7      27  25.01
+4  corn  2018  Farm-3   Field-2      12  20.55
+
+Outliers by crop:
+           count
+crop
+corn          28
+soy_beans      7
+
+Outliers by year:
+      count
+year
+2011      2
+2014      1
+2015      3
+2017      1
+2018     27
+2019      1
+
+Outliers by farm:
+        count
+farm
+Farm-0      3
+Farm-1      1
+Farm-2      5
+Farm-3     13
+Farm-4      2
+Farm-5      1
+Farm-8      3
+Farm-9      7
+
+Duration: 10.3 seconds
 ```
 
 ## PySpark Code for Analysis
 
 ```
-def filter_and_get_avg(df, year, crop):
-    # https://stackoverflow.com/a/32550907
-    filtered_df = df.filter(df['year'] == year).filter(df['crop'] == crop)
-    crop_avg = round(filtered_df.agg(avg(col("yield"))).rdd.map(lambda r: r[0]).collect()[0], 1)
-    return crop_avg
-
 
 def show_yearly_averages(df):
-    print("\nFinding unique years/crops.\n")
-    crops = sorted(df.select('crop').distinct().rdd.map(lambda r: r[0]).collect())
-    years = sorted(df.select('year').distinct().rdd.map(lambda r: r[0]).collect())
-
-    print("Crops: " + ", ".join([str(item) for item in crops]))
-    print("Years: " + ", ".join([str(item) for item in years]))
-
     print("\nAnalyzing yearly yields.\n")
+    # Used to do double for-loop here.
+    df_filtered = df.groupBy("year").agg({'yield': 'avg'}).orderBy("year")
+    pd_df = df_filtered.toPandas().round(1)
+    pd_df.set_index("year", inplace=True)
+    print(pd_df)
 
-    data = []
-    for year in years:
-        year_data = {}
-        for crop in crops:
-            year_data[crop] = filter_and_get_avg(df, year, crop)
-        data.append(year_data)
 
-    print(pd.DataFrame(data, index=years))
+def find_outliers_by_field(outliers, field_name):
+    df_counts = outliers.orderBy(field_name).groupBy(field_name).count()
+    pd_df_counts = df_counts.toPandas()
+    pd_df_counts.set_index(field_name, inplace=True)
+    print(f"\nOutliers by {field_name}:")
+    print(pd_df_counts)
+
+
+def get_mean_and_std(df):
+    df_stats = df.select(
+        _mean(col('yield')).alias('mean'),
+        _stddev(col('yield')).alias('std')
+    ).collect()
+    mean = df_stats[0]['mean']
+    std = df_stats[0]['std']
+    return mean, std
+
+
+def find_outliers(df):
+        mean, std = get_mean_and_std(df)
+        min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
+        print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
+        print(f"Mean yield: {round(mean, 1)}\n")
+        outliers = df.filter(df['yield'] < min_yield)
+        rows = outliers.collect()
+        count = df.count()
+        print(f"Outliers ({len(rows)} out of {count}):")
+        print("Sample:")
+        print(pd.DataFrame([row.asDict() for row in rows]).head(5))
+
+        find_outliers_by_field(outliers, "crop")
+        find_outliers_by_field(outliers, "year")
+        find_outliers_by_field(outliers, "farm")
 ```

@@ -53,13 +53,18 @@ def find_outliers_by_field(outliers, field_name):
     print(pd_df_counts)
 
 
+def get_mean_and_std(df):
+    df_stats = df.select(
+        _mean(col('yield')).alias('mean'),
+        _stddev(col('yield')).alias('std')
+    ).collect()
+    mean = df_stats[0]['mean']
+    std = df_stats[0]['std']
+    return mean, std
+
+
 def find_outliers(df):
-        df_stats = df.select(
-            _mean(col('yield')).alias('mean'),
-            _stddev(col('yield')).alias('std')
-        ).collect()
-        mean = df_stats[0]['mean']
-        std = df_stats[0]['std']
+        mean, std = get_mean_and_std(df)
         min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
         print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
