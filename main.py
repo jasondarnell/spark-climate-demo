@@ -4,7 +4,12 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import col, avg, mean as _mean, stddev as _stddev
 
 
+OUTLIER_STDDEV_MULT = 3.5
+
+get_first = lambda item: item[0]
+
 def get_df():
+    # Use this for docker master/workers
     #sc = SparkContext(master="spark://my-spark-master:7077")
     sc = SparkContext()
     sqlContext = SQLContext(sc)
@@ -16,33 +21,9 @@ def show_df_summary(df):
     print("\nDataFrame schema:")
     df.printSchema()
     print("Sample:")
-    samples = df.sample(fraction=0.5).limit(10).collect()
+    samples = df.sample(fraction=0.5).limit(5).collect()
     print(pd.DataFrame([row.asDict() for row in samples]))
-    #for sample in samples:
-    #    print(str(sample))
 
-
-def filter_and_get_avg(df, year, crop):
-    # https://stackoverflow.com/a/32550907
-    filtered_df = df.filter(df['year'] == year).filter(df['crop'] == crop)
-    crop_avg = round(filtered_df.agg(avg(col("yield"))).rdd.map(lambda r: r[0]).collect()[0], 1)
-    return crop_avg
-
-
-def get_crops_and_years(df):
-    print("\nFinding unique years/crops.\n")
-    crops = sorted(df.select('crop').distinct().rdd.map(lambda r: r[0]).collect())
-    years = sorted(df.select('year').distinct().rdd.map(lambda r: r[0]).collect())
-
-    print("Crops: " + ", ".join([str(item) for item in crops]))
-    print("Years: " + ", ".join([str(item) for item in years]))
-
-    return crops, years
-
-def get_farms(df):
-    print("\nFinding unique farms.\n")
-    farms = sorted(df.select('farm').distinct().rdd.map(lambda r: r[0]).collect())
-    return farms
 
 def find_unique(df, field_name):
     print(f"Finding unique {field_name}s.")
@@ -50,17 +31,15 @@ def find_unique(df, field_name):
     print(f"{field_name.title()}s: " + ", ".join([str(item) for item in values]))
     return values
 
+
 def show_yearly_averages(df, crops, years):
     print("\nAnalyzing yearly yields.\n")
-
-    data = []
-    for year in years:
-        year_data = {}
-        for crop in crops:
-            year_data[crop] = filter_and_get_avg(df, year, crop)
-        data.append(year_data)
-
-    print(pd.DataFrame(data, index=years))
+    # Used to do double for-loop here.
+    df_filtered = df.groupBy("year").agg({'yield': 'avg'})
+    pd_df = df_filtered.toPandas().round(1)
+    pd_df.set_index("year")
+    print(pd_df)
+    exit(0)
 
 
 def find_outliers_by_field(outliers, field_name, field_values):
@@ -78,7 +57,7 @@ def find_outliers(df, crops, years, farms):
         ).collect()
         mean = df_stats[0]['mean']
         std = df_stats[0]['std']
-        min_yield = round(mean - 3.5 * std, 1)
+        min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
         print(f"\nOutlier threshold (min yield): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
         outliers = df.filter(df['yield'] < min_yield)
@@ -95,7 +74,6 @@ def find_outliers(df, crops, years, farms):
 
 def main():
     df = get_df()
-    #crops, years = get_crops_and_years(df)
     crops = find_unique(df, "crop")
     years = find_unique(df, "year")
     farms = find_unique(df, "farm")
