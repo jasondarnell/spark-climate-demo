@@ -1,5 +1,4 @@
 
-
 from time import time
 import pandas as pd
 from pyspark import SparkContext
@@ -54,6 +53,7 @@ def find_outliers_by_field(outliers, field_name):
 
 
 def get_mean_and_std(df):
+    # https://stackoverflow.com/a/47995478
     df_stats = df.select(
         _mean(col('yield')).alias('mean'),
         _stddev(col('yield')).alias('std')
@@ -89,6 +89,7 @@ def main():
     find_outliers(df)
 
     print(f"\nDuration: {round(time()-t, 1)} seconds\n")
+
 
 if __name__ == "__main__":
     main()
