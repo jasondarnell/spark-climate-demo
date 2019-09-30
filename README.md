@@ -151,15 +151,6 @@ def show_average_by_field(df, field_name):
     print(pd_df)
 
 
-def show_yearly_averages(df):
-    print("\nAnalyzing yearly yields.\n")
-    # Used to do double for-loop here.
-    df_filtered = df.groupBy("year").agg({'yield': 'avg'}).orderBy("year")
-    pd_df = df_filtered.toPandas().round(1)
-    pd_df.set_index("year", inplace=True)
-    print(pd_df)
-
-
 def find_outliers_by_field(outliers, field_name):
     df_counts = outliers.orderBy(field_name).groupBy(field_name).count()
     pd_df_counts = df_counts.toPandas()
