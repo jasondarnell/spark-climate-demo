@@ -9,7 +9,7 @@ from pyspark.sql.functions import col, avg, mean as _mean, stddev as _stddev
 OUTLIER_STDDEV_MULT = 3
 
 
-def get_df():
+def get_all_harvest_df():
     # Use this for docker master/workers
     #sc = SparkContext(master="spark://my-spark-master:7077")
     sc = SparkContext()
@@ -36,10 +36,10 @@ def find_unique(df, field_name):
     return values
 
 
-def show_average_by_field(df, field_name):
-    print(f"\nAnalyzing yield by {field_name}.\n")
+def show_average_by_field(all_harvest_df, field_name):
+    print(f"\nAnalyzing yield by {field_name} across all data.\n")
     # Used to do double for-loop here.
-    df_filtered = df.groupBy(field_name).agg({'yield': 'avg'}).orderBy(field_name)
+    df_filtered = all_harvest_df.groupBy(field_name).agg({'yield': 'avg'}).orderBy(field_name)
     pd_df = df_filtered.toPandas().round(1)
     pd_df.set_index(field_name, inplace=True)
     print(pd_df)
@@ -53,9 +53,9 @@ def find_outliers_by_field(outliers, field_name):
     print(pd_df_counts)
 
 
-def get_mean_and_std(df):
+def get_mean_and_std(all_harvest_df):
     # https://stackoverflow.com/a/47995478
-    df_stats = df.select(
+    df_stats = all_harvest_df.select(
         _mean(col('yield')).alias('mean'),
         _stddev(col('yield')).alias('std')
     ).collect()
@@ -64,13 +64,13 @@ def get_mean_and_std(df):
     return mean, std
 
 
-def find_outliers(df):
-        mean, std = get_mean_and_std(df)
+def find_outliers(all_harvest_df):
+        mean, std = get_mean_and_std(all_harvest_df)
         min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
         print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
-        outliers = df.filter(df['yield'] < min_yield)
-        print(f"Outliers ({outliers.count()} out of {df.count()}):")
+        outliers = all_harvest_df.filter(all_harvest_df['yield'] < min_yield)
+        print(f"Outliers ({outliers.count()} out of {all_harvest_df.count()}):")
         print("Sample:")
         print(outliers.toPandas().head(5))
 
@@ -88,10 +88,10 @@ def show_averages(df):
 def main():
     t = time()
 
-    df = get_df()
-    show_df_summary(df)
-    show_averages(df)
-    find_outliers(df)
+    all_harvest_df = get_all_harvest_df()
+    show_df_summary(all_harvest_df)
+    show_averages(all_harvest_df)
+    find_outliers(all_harvest_df)
 
     print(f"\nDuration: {round(time()-t, 1)} seconds\n")
 

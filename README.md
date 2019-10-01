@@ -46,21 +46,22 @@ Data saved to 'data.parquet'.
 ```
 
 root@05a651babe30:~# python main.py
-19/09/30 21:20:30 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+19/10/01 19:39:18 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
 Loading data from 'data.parquet'.
 
+DataFrame schema:
 Sample:
    crop  year    farm    field  raster  yield
 0  corn  2010  Farm-0  Field-0       0  45.90
-1  corn  2010  Farm-0  Field-0       3  51.67
+1  corn  2010  Farm-0  Field-0       2  52.28
 2  corn  2010  Farm-0  Field-0       4  49.58
 3  corn  2010  Farm-0  Field-0       5  46.03
-4  corn  2010  Farm-0  Field-0       8  53.59
+4  corn  2010  Farm-0  Field-0       6  45.56
 
-Analyzing yield by year.
+Analyzing yield by year across all data.
 
       avg(yield)
 year
@@ -75,7 +76,7 @@ year
 2018        54.6
 2019        44.1
 
-Analyzing yield by farm.
+Analyzing yield by farm across all data.
 
         avg(yield)
 farm
@@ -90,7 +91,7 @@ Farm-7        55.0
 Farm-8        49.9
 Farm-9        46.9
 
-Analyzing yield by crop.
+Analyzing yield by crop across all data.
 
            avg(yield)
 crop
@@ -136,18 +137,35 @@ Farm-6      5
 Farm-8      4
 Farm-9     55
 
-Duration: 13.7 seconds
+Duration: 15.1 seconds
 
 ```
 
 ## PySpark Code for Analysis
 
 ```
+def get_all_harvest_df():
+    # Use this for docker master/workers
+    #sc = SparkContext(master="spark://my-spark-master:7077")
+    sc = SparkContext()
+    sqlContext = SQLContext(sc)
+    print("Loading data from 'data.parquet'.")
+    df = sqlContext.read.parquet('data.parquet')
+    return df
 
-def show_average_by_field(df, field_name):
-    print(f"\nAnalyzing yield by {field_name}.\n")
+
+def show_df_summary(df):
+    print("\nDataFrame schema:")
+    #df.printSchema()
+    print("Sample:")
+    samples = df.sample(fraction=0.5).limit(5).collect()
+    print(pd.DataFrame([row.asDict() for row in samples]))
+
+
+def show_average_by_field(all_harvest_df, field_name):
+    print(f"\nAnalyzing yield by {field_name} across all data.\n")
     # Used to do double for-loop here.
-    df_filtered = df.groupBy(field_name).agg({'yield': 'avg'}).orderBy(field_name)
+    df_filtered = all_harvest_df.groupBy(field_name).agg({'yield': 'avg'}).orderBy(field_name)
     pd_df = df_filtered.toPandas().round(1)
     pd_df.set_index(field_name, inplace=True)
     print(pd_df)
@@ -161,9 +179,9 @@ def find_outliers_by_field(outliers, field_name):
     print(pd_df_counts)
 
 
-def get_mean_and_std(df):
+def get_mean_and_std(all_harvest_df):
     # https://stackoverflow.com/a/47995478
-    df_stats = df.select(
+    df_stats = all_harvest_df.select(
         _mean(col('yield')).alias('mean'),
         _stddev(col('yield')).alias('std')
     ).collect()
@@ -172,13 +190,13 @@ def get_mean_and_std(df):
     return mean, std
 
 
-def find_outliers(df):
-        mean, std = get_mean_and_std(df)
+def find_outliers(all_harvest_df):
+        mean, std = get_mean_and_std(all_harvest_df)
         min_yield = round(mean - OUTLIER_STDDEV_MULT * std, 1)
         print(f"\nOutlier threshold (mean - {OUTLIER_STDDEV_MULT} x std): {min_yield}")
         print(f"Mean yield: {round(mean, 1)}\n")
-        outliers = df.filter(df['yield'] < min_yield)
-        print(f"Outliers ({outliers.count()} out of {df.count()}):")
+        outliers = all_harvest_df.filter(all_harvest_df['yield'] < min_yield)
+        print(f"Outliers ({outliers.count()} out of {all_harvest_df.count()}):")
         print("Sample:")
         print(outliers.toPandas().head(5))
 
@@ -186,4 +204,20 @@ def find_outliers(df):
         find_outliers_by_field(outliers, "year")
         find_outliers_by_field(outliers, "farm")
 
+
+def show_averages(df):
+    show_average_by_field(df, "year")
+    show_average_by_field(df, "farm")
+    show_average_by_field(df, "crop")
+
+
+def main():
+    t = time()
+
+    all_harvest_df = get_all_harvest_df()
+    show_df_summary(all_harvest_df)
+    show_averages(all_harvest_df)
+    find_outliers(all_harvest_df)
+
+    print(f"\nDuration: {round(time()-t, 1)} seconds\n")
 ```
